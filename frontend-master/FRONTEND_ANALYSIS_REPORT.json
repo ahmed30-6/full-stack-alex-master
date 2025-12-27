@@ -1,0 +1,473 @@
+{
+  "architecture": {
+    "tech_stack": {
+      "framework": "React 19.2.0",
+      "build_tool": "Vite 6.4.1",
+      "language": "TypeScript 5.8.2",
+      "styling": "Tailwind CSS 4.1.17",
+      "firebase_sdk": "12.5.0",
+      "firebase_admin": "13.6.0 (included but not used in frontend)",
+      "backend_dependencies": "express, mongodb, mongoose (mixed in package.json but not used in frontend)",
+      "charts": "recharts 3.3.0"
+    },
+    "folder_structure": {
+      "root_files": [
+        "App.tsx - Main application component with routing logic",
+        "index.tsx - React entry point",
+        "types.ts - TypeScript interfaces and enums",
+        "constants.ts - Application constants (users, modules, pages)",
+        "activities.ts - Activity definitions",
+        "moduleContent.ts - Learning content data",
+        "quizQuestions.ts - Quiz questions data"
+      ],
+      "components/": "Reusable UI components (Header, Sidebar, DashboardLayout, EditableText, etc.)",
+      "components/pages/": "Page-level components (HomePage, ContentPage, ModuleQuizPage, etc.)",
+      "src/": "Core services and configuration",
+      "src/services/": "API and sync services",
+      "src/assets/": "Static assets"
+    },
+    "state_management": {
+      "approach": "React useState hooks in App.tsx (centralized state)",
+      "global_state": [
+        "allModuleScores - All users' quiz scores indexed by email",
+        "allStudents - List of all registered users",
+        "newsItems - News/announcements",
+        "groups - Learning groups",
+        "discussions - Chat messages"
+      ],
+      "user_state": [
+        "completedLessons - User's lesson progress",
+        "finalQuizPassed - Quiz completion status",
+        "unlockedModules - Available modules",
+        "currentActivityId - Active activity",
+        "currentModuleId - Active module"
+      ],
+      "persistence": "localStorage for client-side caching + backend MongoDB via apiService",
+      "data_flow": "Props drilling from App.tsx to child components"
+    }
+  },
+  "firebase_usage": [
+    {
+      "file": "src/firebase.ts",
+      "imports": [
+        "initializeApp from firebase/app",
+        "getAuth from firebase/auth",
+        "getAnalytics from firebase/analytics"
+      ],
+      "purpose": "Firebase initialization and configuration",
+      "features_used": ["Authentication", "Analytics"],
+      "exports": ["auth (Auth instance)", "app (FirebaseApp instance)"],
+      "config": "Hardcoded Firebase config (apiKey, authDomain, projectId, storageBucket, etc.)"
+    },
+    {
+      "file": "src/authservice.ts",
+      "imports": ["signInWithEmailAndPassword from firebase/auth"],
+      "purpose": "User login with email/password",
+      "features_used": ["Authentication - signInWithEmailAndPassword"],
+      "flow": "Takes email/password → calls signInWithEmailAndPassword → returns ID token",
+      "token_handling": "Calls user.getIdToken() and returns it"
+    },
+    {
+      "file": "components/LoginPage.tsx",
+      "imports": [
+        "createUserWithEmailAndPassword from firebase/auth",
+        "auth from src/firebase"
+      ],
+      "purpose": "User signup and login UI",
+      "features_used": [
+        "Authentication - createUserWithEmailAndPassword for signup",
+        "Authentication - loginUser() for login",
+        "Token retrieval - getIdToken()"
+      ],
+      "flow": "Signup: createUserWithEmailAndPassword → getIdToken → syncUser → apiService.addUser → onLogin callback"
+    },
+    {
+      "file": "src/services/apiService.ts",
+      "imports": [
+        "getStorage from firebase/storage",
+        "ref as storageRef from firebase/storage",
+        "getDownloadURL from firebase/storage",
+        "auth from ../firebase"
+      ],
+      "purpose": "Backend API communication and Firebase Storage URL resolution",
+      "features_used": [
+        "Storage - getDownloadURL to resolve gs:// URLs to https:// URLs",
+        "Auth - auth.currentUser.getIdToken() for API authentication"
+      ],
+      "storage_usage": "getStorageUrl() method resolves Firebase Storage paths to download URLs",
+      "auth_usage": "Every API call retrieves ID token via auth.currentUser?.getIdToken()"
+    },
+    {
+      "file": "src/services/syncService.ts",
+      "imports": "None (uses auth from App.tsx context)",
+      "purpose": "Sync frontend data to backend MongoDB",
+      "features_used": ["Uses ID tokens passed as parameters"],
+      "note": "Does not directly import Firebase, receives tokens from calling code"
+    },
+    {
+      "file": "App.tsx",
+      "imports": ["auth from ./src/firebase"],
+      "purpose": "Access current user and ID tokens for sync operations",
+      "features_used": [
+        "auth.currentUser - Get current Firebase user",
+        "auth.currentUser.getIdToken() - Get ID token for backend sync"
+      ],
+      "usage_locations": [
+        "handleCompleteQuiz - Sync pre-test scores",
+        "handleCompleteFinalQuiz - Sync post-test scores",
+        "handleSendMessage - Sync chat messages",
+        "handleActivitySubmission - Sync file uploads"
+      ]
+    }
+  ],
+  "firebase_features_summary": {
+    "authentication": {
+      "methods": ["Email/Password signup", "Email/Password login"],
+      "token_usage": "ID tokens retrieved via getIdToken() and sent as Bearer tokens to backend",
+      "session_management": "Firebase handles session, frontend checks auth.currentUser"
+    },
+    "storage": {
+      "direct_upload": "NO - Files are NOT uploaded directly to Firebase Storage",
+      "url_resolution": "YES - getDownloadURL() used to resolve storage paths to URLs",
+      "actual_upload_flow": "Files uploaded to backend /api/submissions endpoint (GridFS/MongoDB)"
+    },
+    "firestore": {
+      "used": "NO - No Firestore imports or usage found",
+      "note": "Comments mention 'Firestore' but actual implementation uses backend MongoDB polling"
+    },
+    "analytics": {
+      "initialized": "YES - getAnalytics() called in firebase.ts",
+      "usage": "Passive - no explicit analytics events tracked in code"
+    }
+  },
+  "auth_flow": {
+    "signup": {
+      "steps": [
+        "1. User enters name, email, password in LoginPage",
+        "2. createUserWithEmailAndPassword(auth, email, password) called",
+        "3. userCredential.user.getIdToken() retrieves ID token",
+        "4. syncUser() called with firebaseUid, username, email, profile, idToken → POST /api/sync/user",
+        "5. apiService.addUser() called → POST /api/users",
+        "6. apiService.getUserProfile() fetches saved profile → POST /api/profile",
+        "7. onLogin(newUser) callback updates App.tsx state",
+        "8. User redirected to home page"
+      ],
+      "token_handling": "ID token retrieved immediately after signup and used for all backend calls",
+      "backend_sync": "User data synced to MongoDB via /api/sync/user and /api/users endpoints"
+    },
+    "login": {
+      "steps": [
+        "1. User enters email, password in LoginPage",
+        "2. loginUser(email, password) → signInWithEmailAndPassword(auth, email, password)",
+        "3. Token retrieved via userCredential.user.getIdToken()",
+        "4. syncLoginTime() called → POST /api/sync/login with firebaseUid",
+        "5. apiService.getUserProfile(email) fetches user data → POST /api/profile",
+        "6. onLogin(loggedInUser) callback updates App.tsx state",
+        "7. apiService.loadAppData() loads user's saved progress from MongoDB",
+        "8. If admin, apiService.getAllAppData() and apiService.getUsers() load all data"
+      ],
+      "admin_login": "Special case: email === 'admuser.collearning.2025@gmail.com' with password 'collearningadmin#2025'",
+      "token_handling": "Token stored in memory (not localStorage), retrieved via auth.currentUser.getIdToken() for each API call",
+      "session_persistence": "Firebase SDK handles session persistence automatically"
+    },
+    "session_storage": {
+      "firebase_session": "Managed by Firebase SDK (IndexedDB/localStorage)",
+      "user_object": "Stored in React state (App.tsx useState)",
+      "user_progress": "Stored in localStorage with key 'progress_{email}' + synced to MongoDB",
+      "logout": "Clears React state but does NOT call Firebase signOut (potential issue)"
+    }
+  },
+  "upload_flow": {
+    "file_upload": {
+      "trigger": "User clicks 'تحميل' button in ActivityPage",
+      "handler": "handleActivitySubmission in App.tsx",
+      "steps": [
+        "1. File selected via <input type='file'>",
+        "2. FileReader.readAsDataURL(file) converts file to base64",
+        "3. Firebase ID token retrieved: auth.currentUser.getIdToken()",
+        "4. POST /api/submissions with { name, type, data (base64), moduleId, activityId }",
+        "5. Backend stores file in GridFS and returns { url, fileId }",
+        "6. syncActivityFile() called → POST /api/sync/activity-file with { activityId, filename, url, uploadedByUid }",
+        "7. Message object created with attachment metadata",
+        "8. Message added to discussions state",
+        "9. apiService.saveAppData() persists discussions to MongoDB"
+      ],
+      "firebase_storage_usage": "NONE - Files NOT uploaded to Firebase Storage",
+      "actual_storage": "Backend GridFS (MongoDB)",
+      "url_generation": "Backend generates URL, not Firebase getDownloadURL",
+      "note": "getDownloadURL is only used in apiService.getStorageUrl() to resolve existing gs:// URLs, not for uploads"
+    },
+    "avatar_upload": {
+      "method": "Uses placeholder URLs from picsum.photos",
+      "no_actual_upload": "Avatars are generated URLs, not uploaded files",
+      "storage": "Avatar URLs stored in user object and MongoDB"
+    }
+  },
+  "quiz_flow": {
+    "pre_test": {
+      "location": "components/pages/ModuleQuizPage.tsx",
+      "trigger": "handleStartModule() in App.tsx sets quizActive=true",
+      "data_source": "quizQuestionsByModule[currentModuleId] from quizQuestions.ts",
+      "scoring": "Local state in ModuleQuizPage, score incremented on correct answer",
+      "completion": {
+        "callback": "onComplete(score, timeTaken) → handleCompleteQuiz in App.tsx",
+        "state_update": "allModuleScores[user.email][currentModuleId].preTestScore = score",
+        "backend_sync": [
+          "apiService.saveAppData() → POST /api/appdata with moduleScores",
+          "syncScore() → POST /api/sync/score with { studentUid, examId, score, maxScore, groupId }",
+          "apiService.recordActivity() → POST /api/activities with action='pre_test_completed'"
+        ],
+        "navigation": "setQuizActive(false), setCurrentPage(PageEnum.LearningPath)"
+      },
+      "admin_bypass": "Admin can click 'تجاوز الاختبار' to skip with full score"
+    },
+    "post_test": {
+      "location": "components/pages/FinalQuizPage.tsx",
+      "trigger": "handleStartFinalQuiz() in App.tsx sets showFinalQuiz=true",
+      "data_source": "Same quizQuestionsByModule[currentModuleId]",
+      "passing_score": "80% (Math.ceil(questions.length * 0.8))",
+      "completion": {
+        "callback": "onComplete(score, timeTaken) → handleCompleteFinalQuiz in App.tsx",
+        "state_update": "allModuleScores[user.email][currentModuleId].postTestScore = score",
+        "backend_sync": [
+          "apiService.saveAppData() → POST /api/appdata",
+          "syncScore() → POST /api/sync/score with examId='module-{id}-posttest'",
+          "apiService.recordActivity() → POST /api/activities"
+        ],
+        "on_pass": [
+          "setFinalQuizPassed(true)",
+          "Unlock next module",
+          "Remove user from group (automatic group exit)",
+          "Navigate to Content page"
+        ],
+        "on_fail": "User can retry by returning to learning path"
+      }
+    },
+    "score_storage": {
+      "frontend": "allModuleScores state object in App.tsx",
+      "localStorage": "Saved under 'all_module_scores' key",
+      "backend": "Synced to MongoDB via /api/appdata and /api/sync/score",
+      "structure": "{ [email]: { [moduleId]: { preTestScore, postTestScore, preTestTime, postTestTime } } }"
+    },
+    "cognitive_level_calculation": {
+      "function": "getCognitiveLevel(score, totalQuestions)",
+      "thresholds": [
+        "≤47% → 'أساسي' (Basic)",
+        "48-73% → 'متوسط' (Intermediate)",
+        "≥74% → 'متقدم' (Advanced)"
+      ],
+      "usage": "Determines group assignment and learning path customization"
+    }
+  },
+  "chat_flow": {
+    "location": "components/pages/CollaborativeLearningPage.tsx",
+    "trigger": "User clicks 'ابدا النشاط' in ActivityPage → handleStartActivity() → setCurrentPage(CollaborativeLearning)",
+    "message_sending": {
+      "ui": "Text input + 'إرسال' button",
+      "handler": "onSendMessage(activityId, text) → handleSendMessage in App.tsx",
+      "steps": [
+        "1. Find user's group from groups array",
+        "2. Create Message object with { id, groupId, moduleId, activityId, author, text, timestamp }",
+        "3. Add message to discussions state array",
+        "4. syncActivityMessage() → POST /api/sync/activity-message with { activityId, text }",
+        "5. apiService.saveAppData() → POST /api/appdata with discussions array"
+      ]
+    },
+    "message_display": {
+      "filtering": "discussions.filter(msg => msg.groupId === userGroup.id && msg.moduleId === moduleId && msg.activityId === activityId)",
+      "sorting": "By timestamp ascending",
+      "styling": "User's messages on right (blue), others on left (gray)"
+    },
+    "storage": {
+      "firestore": "NO - Not used",
+      "real_time": "NO - Not real-time, uses local state",
+      "backend": "Messages stored in MongoDB via /api/appdata and /api/sync/activity-message",
+      "sync_method": "Manual sync on each message send, no real-time listeners"
+    },
+    "group_requirement": "User must be in a group to access chat, otherwise shows error message"
+  },
+  "component_interaction_map": {
+    "App.tsx": {
+      "role": "Root component, state manager, router",
+      "state": "Manages all global and user-specific state",
+      "routing_logic": [
+        "if (!user) → render LoginPage",
+        "if (quizActive && currentModuleId) → render ModuleQuizPage",
+        "if (showFinalQuiz && currentModuleId) → render FinalQuizPage",
+        "else → render DashboardLayout with renderPage() content"
+      ],
+      "renderPage_switch": "Switches on currentPage enum to render appropriate page component"
+    },
+    "LoginPage": {
+      "props": "onLogin callback",
+      "emits": "onLogin(user) when signup/login succeeds",
+      "effect": "App.tsx updates user state, triggers data loading"
+    },
+    "DashboardLayout": {
+      "props": "user, currentPage, setCurrentPage, onLogout, finalQuizPassed, onSmartContentNavigation",
+      "children": "Rendered page content from renderPage()",
+      "components": "Header, Sidebar, main content area"
+    },
+    "ModuleQuizPage": {
+      "props": "onComplete, questions, onUpdateQuestion, isAdmin, onUpdateAnswerText, onSetCorrectAnswer, currentModuleId",
+      "emits": "onComplete(score, timeTaken) → handleCompleteQuiz in App.tsx",
+      "state": "Local: currentQuestion, showScore, score, time, isEditing",
+      "data_flow": "Receives questions from App.tsx, sends score back via callback"
+    },
+    "FinalQuizPage": {
+      "props": "onComplete, onRetry, onUnlockAndNavigate, onNavigateAndClose, questions, ..., passingScore",
+      "emits": "onComplete(score, timeTaken) → handleCompleteFinalQuiz",
+      "similar_to": "ModuleQuizPage but with pass/fail logic and navigation options"
+    },
+    "ContentPage": {
+      "props": "onStartModule, onContinueModule, unlockedModules, user, allModuleScores",
+      "emits": "onStartModule(moduleId) or onContinueModule(moduleId)",
+      "displays": "List of modules with start/continue buttons based on progress"
+    },
+    "LearningPathPage": {
+      "props": "onSelectTopic, onNavigateToGroupFormation, isAdmin, description, objectives, level",
+      "emits": "onSelectTopic(topic) or onNavigateToGroupFormation()",
+      "displays": "Personalized learning path based on cognitive level"
+    },
+    "ModuleContentPage": {
+      "props": "currentModuleId, completedLessons, setCompletedLessons, currentLessonIndex, currentPageIndex, onSetLesson, onSetPage, onNavigateToActivity",
+      "displays": "Lesson content with pagination",
+      "emits": "onNavigateToActivity() when user completes content"
+    },
+    "ActivityPage": {
+      "props": "onStartFinalQuiz, onStartActivity, currentModuleId, isPostTestCompleted, onSubmitActivity",
+      "emits": "onStartFinalQuiz() or onStartActivity(activityId) or onSubmitActivity(activityId, file)",
+      "displays": "List of activities with start buttons and file upload"
+    },
+    "CollaborativeLearningPage": {
+      "props": "activityId, moduleId, user, groups, discussions, onSendMessage",
+      "emits": "onSendMessage(activityId, text)",
+      "displays": "Chat interface filtered by group, module, and activity"
+    },
+    "GroupFormationPage": {
+      "props": "user, groups, onCreateGroup, onJoinGroup, onRemoveUserFromGroup, onAddUserToGroup, isAdmin, allUsers",
+      "emits": "Group management callbacks",
+      "displays": "Group list with join/leave/manage options"
+    },
+    "AdminDashboardPage": {
+      "props": "groups, allStudents, allModuleScores, quizQuestionsByModule, discussions",
+      "displays": "Admin analytics: user list, scores, groups, activities, charts"
+    },
+    "ProfilePage": {
+      "props": "user, allModuleScores, quizQuestionsByModule, isAdmin, allStudents, groups, onUpdateAvatar",
+      "displays": "User profile, progress, scores, avatar editor"
+    }
+  },
+  "requirements_gap_analysis": {
+    "feature_1_user_sync": {
+      "requirement": "Sync user data after signup",
+      "status": "Fully supported",
+      "implementation": "syncUser() called in LoginPage.handleSignUpSubmit → POST /api/sync/user",
+      "data_synced": "firebaseUid, username, email, profile (avatar)"
+    },
+    "feature_2_login_time_sync": {
+      "requirement": "Sync login time after successful login",
+      "status": "Fully supported",
+      "implementation": "syncLoginTime() called in LoginPage.handleLoginSubmit → POST /api/sync/login",
+      "data_synced": "firebaseUid"
+    },
+    "feature_3_file_upload_sync": {
+      "requirement": "Sync activity file uploads",
+      "status": "Fully supported",
+      "implementation": "syncActivityFile() called in App.handleActivitySubmission → POST /api/sync/activity-file",
+      "data_synced": "activityId, filename, url, uploadedByUid",
+      "note": "Files uploaded to backend GridFS, NOT Firebase Storage"
+    },
+    "feature_4_score_sync": {
+      "requirement": "Sync exam/quiz scores",
+      "status": "Fully supported",
+      "implementation": "syncScore() called in handleCompleteQuiz and handleCompleteFinalQuiz → POST /api/sync/score",
+      "data_synced": "studentUid, examId, score, maxScore, groupId",
+      "triggers": "Pre-test completion, post-test completion"
+    },
+    "feature_5_message_sync": {
+      "requirement": "Sync activity chat messages",
+      "status": "Fully supported",
+      "implementation": "syncActivityMessage() called in App.handleSendMessage → POST /api/sync/activity-message",
+      "data_synced": "activityId, text"
+    },
+    "feature_6_firebase_storage": {
+      "requirement": "Use Firebase Storage for file uploads",
+      "status": "NOT IMPLEMENTED",
+      "actual_implementation": "Files uploaded to backend GridFS (MongoDB)",
+      "firebase_storage_usage": "Only getDownloadURL() used to resolve existing gs:// URLs, no uploadBytes/uploadString",
+      "gap": "Firebase Storage SDK imported but not used for uploads"
+    },
+    "feature_7_firestore_listeners": {
+      "requirement": "Use Firestore real-time listeners",
+      "status": "NOT IMPLEMENTED",
+      "actual_implementation": "Backend polling via setInterval (10-15 seconds) in apiService.watchStudents/watchActivities/watchGroups",
+      "gap": "No Firestore imports, comments mention Firestore but code uses HTTP polling"
+    },
+    "feature_8_backend_integration": {
+      "requirement": "All sync functions call backend endpoints",
+      "status": "Fully supported",
+      "implementation": "All sync functions in syncService.ts call /api/sync/* endpoints with Bearer token authentication",
+      "endpoints": [
+        "POST /api/sync/user",
+        "POST /api/sync/login",
+        "POST /api/sync/activity-file",
+        "POST /api/sync/score",
+        "POST /api/sync/activity-message"
+      ]
+    }
+  },
+  "run_commands": {
+    "development": "npm run dev OR npm start",
+    "build": "npm run build",
+    "preview": "npm run preview",
+    "port": "3000 (configured in vite.config.ts)",
+    "host": "0.0.0.0 (accessible from network)"
+  },
+  "env_needed": {
+    "VITE_API_BASE": {
+      "description": "Backend API base URL",
+      "example": "https://backend-adaptive-collearning.up.railway.app/api",
+      "default": "https://backend-adaptive-collearning.up.railway.app/api (hardcoded fallback)",
+      "usage": "Used in apiService.ts and syncService.ts"
+    },
+    "GEMINI_API_KEY": {
+      "description": "Google Gemini AI API key (optional)",
+      "example": "AIza...",
+      "usage": "Defined in vite.config.ts but not used in visible code",
+      "note": "May be used for AI features not visible in current codebase"
+    },
+    "firebase_config": {
+      "note": "Firebase config is HARDCODED in src/firebase.ts, not in .env",
+      "security_issue": "API keys and config exposed in source code",
+      "recommendation": "Move to environment variables: VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, etc."
+    }
+  },
+  "additional_findings": {
+    "security_concerns": [
+      "Firebase config hardcoded with API keys visible in source",
+      "Admin password hardcoded in LoginPage: 'collearningadmin#2025'",
+      "No Firebase signOut() called on logout, session persists",
+      "CORS and authentication handled by backend, frontend trusts all responses"
+    ],
+    "performance_notes": [
+      "Polling instead of real-time listeners (10-15 second intervals)",
+      "Large state objects passed as props (prop drilling)",
+      "No React.memo or useMemo optimizations visible",
+      "localStorage used extensively for caching"
+    ],
+    "code_quality": [
+      "Mixed Arabic and English in code (comments, variable names)",
+      "Some unused imports (firebase-admin in package.json)",
+      "Backend dependencies (express, mongodb) in frontend package.json",
+      "Inconsistent error handling (some try-catch, some .catch())"
+    ],
+    "missing_features": [
+      "No loading states or spinners for async operations",
+      "No error boundaries for React error handling",
+      "No offline support or service workers",
+      "No input validation on frontend (relies on backend)",
+      "No rate limiting or request debouncing"
+    ]
+  }
+}

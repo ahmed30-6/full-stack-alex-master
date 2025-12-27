@@ -1,0 +1,303 @@
+
+> backend@1.0.0 test
+> jest
+
+PASS tests/learning-path-properties.test.ts
+  Learning Path Validation - Property Tests
+    Property 11: Module unlock requires prerequisites
+      ✓ should reject module unlock without completed prerequisite (25 ms)
+      ✓ should accept module unlock with completed prerequisite (10 ms)
+      ✓ should always accept module 1 unlock (56 ms)
+    Property 12: Lesson completion requires unlocked module
+      ✓ should reject lesson completion in locked module (17 ms)
+      ✓ should accept lesson completion in unlocked module (7 ms)
+    Property 13: Invalid learning path updates are rejected
+      ✓ should reject updates with non-sequential module progression (11 ms)
+      ✓ should accept updates with sequential module progression (8 ms)
+      ✓ should reject module score updates for locked modules (13 ms)
+    Property 14: Final quiz requires passing score
+      ✓ should reject final quiz with failing score (16 ms)
+      ✓ should accept final quiz with passing score (9 ms)
+    Property 15: Module progression follows sequence
+      ✓ should reject non-sequential module arrays (9 ms)
+      ✓ should accept sequential module arrays (10 ms)
+      ✓ should reject empty module arrays
+      ✓ should reject module arrays not starting with 1 (15 ms)
+    Helper Methods
+      ✓ should correctly identify completed modules (6 ms)
+      ✓ should correctly identify incomplete modules (5 ms)
+      ✓ should return highest unlocked module (6 ms)
+
+PASS tests/learning-path.test.ts
+  LearningPathService - Unit Tests
+    validateModuleUnlock
+      ✓ should allow unlocking module 1 (1 ms)
+      ✓ should allow unlocking module 2 when module 1 is completed with passing score
+      ✓ should reject unlocking module 2 when module 1 has failing score
+      ✓ should reject unlocking module 2 when module 1 is not completed (1 ms)
+      ✓ should allow unlocking module with exactly 60% score (1 ms)
+    validateLessonCompletion
+      ✓ should allow lesson completion in unlocked module
+      ✓ should reject lesson completion in locked module (1 ms)
+      ✓ should allow lesson completion in module 1 (always unlocked)
+    validateQuizCompletion
+      ✓ should validate passing quiz score
+      ✓ should validate failing quiz score (1 ms)
+      ✓ should reject invalid maxScore
+    validateFinalQuiz
+      ✓ should accept final quiz with passing score
+      ✓ should reject final quiz with failing score (1 ms)
+      ✓ should accept final quiz with exactly 60% score
+    validateUpdate
+      ✓ should accept valid sequential module progression
+      ✓ should reject non-sequential module progression
+      ✓ should reject unlocking module without prerequisite
+      ✓ should reject module score for locked module
+      ✓ should accept module score for unlocked module
+      ✓ should reject invalid score data structure
+    validateSequentialProgression
+      ✓ should accept [1]
+      ✓ should accept [1, 2, 3]
+      ✓ should reject [1, 3] (gap)
+      ✓ should reject [2, 3] (not starting with 1) (1 ms)
+      ✓ should reject [] (empty)
+      ✓ should accept unsorted but sequential [3, 1, 2]
+    Helper Methods
+      isModuleCompleted
+        ✓ should return true for completed module with passing score
+        ✓ should return false for module with failing score
+        ✓ should return false for non-existent module
+        ✓ should return true for exactly 60% score (1 ms)
+      getHighestUnlockedModule
+        ✓ should return highest module from unlocked array
+        ✓ should return 1 for default state
+        ✓ should handle unsorted array
+      getNextUnlockableModule
+        ✓ should return next module when current is completed
+        ✓ should return null when current module is not completed
+        ✓ should return null when current module has failing score
+
+(node:70155) [MONGOOSE] Warning: Duplicate schema index on {"email":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:70155) [MONGOOSE] Warning: Duplicate schema index on {"firebaseUid":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+PASS tests/scores-learning-path.test.ts
+  Scores & Learning Path API
+    GET /api/scores
+      ✓ should return scores for authenticated user (2 ms)
+      ✓ should filter scores by studentUid
+      ✓ should filter scores by examId
+      ✓ should filter scores by groupId
+      ✓ should paginate results correctly
+      ✓ should return 401 without authentication
+      ✓ should return 403 when student tries to view other scores (1 ms)
+      ✓ should allow admin to view all scores
+    POST /api/scores
+      ✓ should save score successfully
+      ✓ should update AppDataModel for module scores
+      ✓ should calculate percentage correctly
+      ✓ should validate score does not exceed maxScore
+      ✓ should require authentication
+    GET /api/appdata/:uid
+      ✓ should return user and appData for admin
+      ✓ should return 403 for non-admin users
+      ✓ should return 404 for non-existent user
+      ✓ should include user info in response
+      ✓ should include complete learning path data
+
+(node:70153) [MONGOOSE] Warning: Duplicate schema index on {"email":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:70153) [MONGOOSE] Warning: Duplicate schema index on {"firebaseUid":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:70152) [MONGOOSE] Warning: Duplicate schema index on {"email":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:70152) [MONGOOSE] Warning: Duplicate schema index on {"firebaseUid":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:70151) [MONGOOSE] Warning: Duplicate schema index on {"email":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:70151) [MONGOOSE] Warning: Duplicate schema index on {"firebaseUid":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:70157) [MONGOOSE] Warning: Duplicate schema index on {"email":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:70157) [MONGOOSE] Warning: Duplicate schema index on {"firebaseUid":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:70156) [MONGOOSE] Warning: Duplicate schema index on {"email":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:70156) [MONGOOSE] Warning: Duplicate schema index on {"firebaseUid":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:70154) [MONGOOSE] Warning: Duplicate schema index on {"email":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:70154) [MONGOOSE] Warning: Duplicate schema index on {"firebaseUid":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+  console.warn
+    Socket.io not initialized
+
+      189 |   emitGroupUpdated(groupId: string, groupData: any): void {
+      190 |     if (!this.io) {
+    > 191 |       console.warn("Socket.io not initialized");
+          |               ^
+      192 |       return;
+      193 |     }
+      194 |
+
+      at RealtimeService.emitGroupUpdated (services/RealtimeService.ts:191:15)
+      at routes/groups.ts:96:23
+
+  console.warn
+    Socket.io not initialized
+
+      189 |   emitGroupUpdated(groupId: string, groupData: any): void {
+      190 |     if (!this.io) {
+    > 191 |       console.warn("Socket.io not initialized");
+          |               ^
+      192 |       return;
+      193 |     }
+      194 |
+
+      at RealtimeService.emitGroupUpdated (services/RealtimeService.ts:191:15)
+      at routes/groups.ts:96:23
+
+  console.warn
+    Socket.io not initialized
+
+      203 |   emitMessageNew(groupId: string, messageData: any): void {
+      204 |     if (!this.io) {
+    > 205 |       console.warn("Socket.io not initialized");
+          |               ^
+      206 |       return;
+      207 |     }
+      208 |
+
+      at RealtimeService.emitMessageNew (services/RealtimeService.ts:205:15)
+      at routes/sync.ts:327:23
+
+  console.warn
+    Socket.io not initialized
+
+      189 |   emitGroupUpdated(groupId: string, groupData: any): void {
+      190 |     if (!this.io) {
+    > 191 |       console.warn("Socket.io not initialized");
+          |               ^
+      192 |       return;
+      193 |     }
+      194 |
+
+      at RealtimeService.emitGroupUpdated (services/RealtimeService.ts:191:15)
+      at routes/groups.ts:96:23
+
+PASS tests/group-properties.test.ts (5.581 s)
+  Group Model Property-Based Tests
+    Property 1: Group creation stores complete data
+      ✓ should store all provided group data correctly (699 ms)
+    Property 2: Single-type groups enforce exactly one member
+      ✓ should accept single-type groups with exactly one member (36 ms)
+      ✓ should reject single-type groups with zero members (25 ms)
+      ✓ should reject single-type groups with more than one member (18 ms)
+      ✓ should accept multi-type groups with multiple members (41 ms)
+    Property 3: Group retrieval returns all groups
+      ✓ should return all created groups with complete data (253 ms)
+      ✓ should filter groups by type correctly (116 ms)
+
+PASS tests/login-times-endpoint.test.ts (5.884 s)
+  GET /api/login-times/:uid
+    ✓ should return login times when admin requests (967 ms)
+    ✓ should return login times in chronological order (4 ms)
+    ✓ should reject non-admin user (2 ms)
+    ✓ should return 404 for non-existent user (2 ms)
+    ✓ should handle empty loginTimes array (5 ms)
+    ✓ should require authentication (2 ms)
+    ✓ should include user info in response (4 ms)
+
+PASS tests/group-endpoints.test.ts (5.908 s)
+  POST /api/groups
+    ✓ should create a group with valid data (admin) (1016 ms)
+    ✓ should reject single-type group with zero members (3 ms)
+    ✓ should reject single-type group with multiple members (2 ms)
+    ✓ should accept multi-type group with multiple members (5 ms)
+    ✓ should reject request without authentication (2 ms)
+    ✓ should reject request with invalid token (107 ms)
+    ✓ should reject non-admin user (2 ms)
+    ✓ should default to single type if not specified (3 ms)
+  GET /api/groups
+    ✓ should return all groups for admin (9 ms)
+    ✓ should filter groups by type (5 ms)
+    ✓ should filter groups by level (3 ms)
+    ✓ should paginate results correctly (9 ms)
+    ✓ should reject request without authentication (150 ms)
+    ✓ should reject non-admin user (2 ms)
+    ✓ should return empty array when no groups exist (2 ms)
+
+PASS tests/group-service.test.ts (5.882 s)
+  GroupService
+    getUserGroups
+      ✓ should return group IDs for a user who is a member (946 ms)
+      ✓ should return empty array for user with no groups (1 ms)
+      ✓ should return all groups for user in multiple groups (4 ms)
+    validateGroupMembership
+      ✓ should return true when user is a member of the group (2 ms)
+      ✓ should return false when user is not a member of the group (2 ms)
+      ✓ should return false when group does not exist (1 ms)
+      ✓ should work with multi-member groups (4 ms)
+    getGroupsByMember
+      ✓ should return full group objects for a member (2 ms)
+      ✓ should return empty array for non-member (1 ms)
+      ✓ should include all group fields (3 ms)
+    isMemberOfAnyGroup
+      ✓ should return true when user is member of at least one group (4 ms)
+      ✓ should return false when user is not member of any group (3 ms)
+      ✓ should return false for empty group list (1 ms)
+    filterUserGroups
+      ✓ should return only groups where user is a member (4 ms)
+      ✓ should return empty array when user is not member of any provided groups (2 ms)
+      ✓ should return empty array for empty input (1 ms)
+    validateGroupsExist
+      ✓ should return true when all groups exist (2 ms)
+      ✓ should return false when some groups do not exist (3 ms)
+      ✓ should return true for empty array
+    getMembershipCount
+      ✓ should return correct count of groups user is member of (3 ms)
+      ✓ should return 0 for user with no groups
+      ✓ should count multi-member groups correctly (2 ms)
+
+PASS tests/activity-endpoints.test.ts (5.954 s)
+  POST /api/activity/message
+    ✓ should create message when user is group member (972 ms)
+    ✓ should reject message when user is not group member (123 ms)
+    ✓ should require groupId field (52 ms)
+  POST /api/activity/file
+    ✓ should create file when user is group member (92 ms)
+    ✓ should reject file when user is not group member (8 ms)
+  GET /api/activity/message
+    ✓ should return only messages from user's groups (11 ms)
+    ✓ should filter by specific groupId if user is member (8 ms)
+    ✓ should reject query for non-member group (5 ms)
+  GET /api/activity/file
+    ✓ should return only files from user's groups (17 ms)
+    ✓ should support pagination (8 ms)
+
+PASS tests/login-times-properties.test.ts (6.069 s)
+  Login Times Property-Based Tests
+    Property 7: Login timestamps are recorded
+      ✓ should add timestamp to loginTimes array on each login (1452 ms)
+    Property 8: Admin retrieval of login times
+      ✓ should return all login timestamps for any user (117 ms)
+    Property 9: Non-admin access control for login times
+      ✓ should prevent non-admin from accessing other users' login times (84 ms)
+    Property 10: Login timestamps maintain chronological order
+      ✓ should maintain chronological order of login timestamps (252 ms)
+      ✓ should handle out-of-order insertions by sorting (121 ms)
+
+PASS tests/group-association-properties.test.ts (6.487 s)
+  Group Association Property-Based Tests
+    Property 4: Messages and files associate with sender's group
+      ✓ should associate messages with a group where sender is a member (1525 ms)
+      ✓ should associate files with a group where uploader is a member (475 ms)
+      ✓ should maintain group association across multiple messages (144 ms)
+      ✓ should maintain group association across multiple files (169 ms)
+
+PASS tests/access-control-properties.test.ts (6.878 s)
+  Access Control Property-Based Tests
+    Property 5: Group-based access control for messages and files
+      ✓ should only return messages from groups where user is a member (1743 ms)
+      ✓ should only return files from groups where user is a member (508 ms)
+      ✓ should prevent access to messages from non-member groups (148 ms)
+      ✓ should prevent access to files from non-member groups (135 ms)
+
+Test Suites: 11 passed, 11 total
+Tests:       145 passed, 145 total
+Snapshots:   0 total
+Time:        7.223 s
+Ran all test suites.

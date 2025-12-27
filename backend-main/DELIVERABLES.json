@@ -1,0 +1,336 @@
+{
+  "firebase_usages": [
+    {
+      "file": "server.ts",
+      "line_range": "6-7",
+      "snippet": "import admin from 'firebase-admin';\nimport path from 'path';\nimport { getFirestore, Timestamp } from 'firebase-admin/firestore';",
+      "purpose": "Import Firebase Admin SDK and Firestore modules"
+    },
+    {
+      "file": "server.ts",
+      "line_range": "64-80",
+      "snippet": "try {\n  const serviceAccountPath = path.join(__dirname, 'adaptive-collaborative-learn-firebase-adminsdk-fbsvc-baa1399a32.json');\n  const serviceAccount = require(serviceAccountPath);\n  admin.initializeApp({\n    credential: admin.credential.cert(serviceAccount as admin.ServiceAccount)\n  });\n  db = getFirestore();\n  console.log('Firebase Admin initialized.');\n} catch (err) {\n  console.warn('Firebase Admin SDK not initialized...');\n}",
+      "purpose": "Initialize Firebase Admin SDK with service account credentials"
+    },
+    {
+      "file": "server.ts",
+      "line_range": "188",
+      "snippet": "decoded = await admin.auth().verifyIdToken(token);",
+      "purpose": "Verify Firebase ID token in /api/loginEvent endpoint"
+    },
+    {
+      "file": "server.ts",
+      "line_range": "231",
+      "snippet": "decoded = await admin.auth().verifyIdToken(token);",
+      "purpose": "Verify Firebase ID token in /api/loginEvents endpoint (admin only)"
+    },
+    {
+      "file": "server.ts",
+      "line_range": "275",
+      "snippet": "decoded = await admin.auth().verifyIdToken(token);",
+      "purpose": "Verify Firebase ID token in POST /api/users endpoint"
+    },
+    {
+      "file": "server.ts",
+      "line_range": "363",
+      "snippet": "decoded = await admin.auth().verifyIdToken(token);",
+      "purpose": "Verify Firebase ID token in GET /api/users endpoint (admin only)"
+    },
+    {
+      "file": "server.ts",
+      "line_range": "445",
+      "snippet": "decoded = await admin.auth().verifyIdToken(token);",
+      "purpose": "Verify Firebase ID token in POST /api/appdata endpoint"
+    },
+    {
+      "file": "server.ts",
+      "line_range": "598",
+      "snippet": "decoded = await admin.auth().verifyIdToken(token);",
+      "purpose": "Verify Firebase ID token in GET /api/appdata endpoint"
+    },
+    {
+      "file": "server.ts",
+      "line_range": "634",
+      "snippet": "decoded = await admin.auth().verifyIdToken(token);",
+      "purpose": "Verify Firebase ID token in POST /api/profile endpoint"
+    },
+    {
+      "file": "routes/sync.ts",
+      "line_range": "8-24",
+      "snippet": "async function verifyAuth(req: Request, res: Response, next: Function) {\n  try {\n    const authHeader = req.headers.authorization || '';\n    const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;\n    if (!token || !admin.apps.length) {\n      return res.status(401).json({ error: 'Authentication required' });\n    }\n    const decoded = await admin.auth().verifyIdToken(token);\n    (req as any).user = decoded;\n    next();\n  } catch (err) {\n    return res.status(401).json({ error: 'Invalid auth token' });\n  }\n}",
+      "purpose": "Reusable middleware to verify Firebase ID tokens for sync endpoints"
+    }
+  ],
+  "routes": [
+    {
+      "path": "/api/health",
+      "method": "GET",
+      "handler": "server.ts:55",
+      "auth": false,
+      "description": "Health check endpoint"
+    },
+    {
+      "path": "/api/addData",
+      "method": "POST",
+      "handler": "server.ts:88",
+      "auth": false,
+      "description": "Example endpoint without authentication"
+    },
+    {
+      "path": "/api/loginEvent",
+      "method": "POST",
+      "handler": "server.ts:175",
+      "auth": true,
+      "description": "Record login event (requires Firebase token)"
+    },
+    {
+      "path": "/api/loginEvents",
+      "method": "GET",
+      "handler": "server.ts:218",
+      "auth": true,
+      "description": "Fetch recent login events (admin only)"
+    },
+    {
+      "path": "/api/users",
+      "method": "POST",
+      "handler": "server.ts:262",
+      "auth": true,
+      "description": "Create or update user"
+    },
+    {
+      "path": "/api/users",
+      "method": "GET",
+      "handler": "server.ts:350",
+      "auth": true,
+      "description": "Get all users (admin only)"
+    },
+    {
+      "path": "/api/appdata",
+      "method": "POST",
+      "handler": "server.ts:432",
+      "auth": true,
+      "description": "Save app data for user"
+    },
+    {
+      "path": "/api/appdata",
+      "method": "GET",
+      "handler": "server.ts:585",
+      "auth": true,
+      "description": "Get app data for user"
+    },
+    {
+      "path": "/api/profile",
+      "method": "POST",
+      "handler": "server.ts:621",
+      "auth": true,
+      "description": "Get user profile"
+    },
+    {
+      "path": "/api/sync/user",
+      "method": "POST",
+      "handler": "routes/sync.ts:27",
+      "auth": true,
+      "description": "Upsert user with firebaseUid (NEW)"
+    },
+    {
+      "path": "/api/sync/login-time",
+      "method": "POST",
+      "handler": "routes/sync.ts:56",
+      "auth": true,
+      "description": "Record login timestamp (NEW)"
+    },
+    {
+      "path": "/api/scores",
+      "method": "POST",
+      "handler": "routes/sync.ts:79",
+      "auth": true,
+      "description": "Save exam/quiz score (NEW)"
+    },
+    {
+      "path": "/api/activity/file",
+      "method": "POST",
+      "handler": "routes/sync.ts:102",
+      "auth": true,
+      "description": "Save activity file metadata (NEW)"
+    },
+    {
+      "path": "/api/activity/message",
+      "method": "POST",
+      "handler": "routes/sync.ts:125",
+      "auth": true,
+      "description": "Save message to activity (NEW, socket.io pending)"
+    }
+  ],
+  "models": [
+    {
+      "file": "models/User.ts",
+      "name": "User",
+      "collection": "users",
+      "schema": {
+        "firebaseUid": "String (required, unique, indexed)",
+        "username": "String (required, normalized: trim+lowercase)",
+        "email": "String (required, unique, indexed)",
+        "profile": "Mixed (optional)",
+        "role": "String (enum: admin|student|teacher, default: student)",
+        "loginTimes": "Array of Dates (default: [])",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      }
+    },
+    {
+      "file": "models/Score.ts",
+      "name": "Score",
+      "collection": "scores",
+      "schema": {
+        "studentUid": "String (required, indexed)",
+        "examId": "String (required, indexed)",
+        "score": "Number (required)",
+        "maxScore": "Number (required)",
+        "groupId": "String (optional, indexed)",
+        "meta": "Mixed (optional)",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      },
+      "indexes": ["{ studentUid: 1, examId: 1 }"]
+    },
+    {
+      "file": "models/Activity.ts",
+      "name": "ActivityFile",
+      "collection": "activityfiles",
+      "schema": {
+        "activityId": "String (required, indexed)",
+        "filename": "String (required)",
+        "url": "String (required)",
+        "uploadedByUid": "String (required, indexed)",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      }
+    },
+    {
+      "file": "models/Message.ts",
+      "name": "Message",
+      "collection": "messages",
+      "schema": {
+        "activityId": "String (required, indexed)",
+        "text": "String (required)",
+        "senderUid": "String (required, indexed)",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      }
+    },
+    {
+      "file": "server.ts (inline)",
+      "name": "LoginEvent",
+      "collection": "loginevents",
+      "schema": {
+        "name": "String (required)",
+        "email": "String (required)",
+        "userAgent": "String (optional)",
+        "ip": "String (optional)",
+        "timestamp": "Date (default: now)"
+      }
+    },
+    {
+      "file": "server.ts (inline)",
+      "name": "User (legacy)",
+      "collection": "users",
+      "schema": {
+        "name": "String (required)",
+        "email": "String (required, unique)",
+        "avatar": "String (optional)",
+        "role": "String (default: student)",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      }
+    },
+    {
+      "file": "server.ts (inline)",
+      "name": "Student",
+      "collection": "students",
+      "schema": {
+        "email": "String (required, unique)",
+        "name": "String (required)",
+        "avatar": "String (default: null)",
+        "registeredAt": "Date (default: now)",
+        "lastActivityAt": "Date (default: now)",
+        "status": "String (default: active)",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      }
+    },
+    {
+      "file": "server.ts (inline)",
+      "name": "AppData",
+      "collection": "appdatas",
+      "schema": {
+        "email": "String (required, unique)",
+        "moduleScores": "Mixed (default: {})",
+        "completedLessons": "Mixed (default: {})",
+        "finalQuizPassed": "Boolean (default: false)",
+        "unlockedModules": "Array of Numbers (default: [1])",
+        "currentActivityId": "Number (default: null)",
+        "currentModuleId": "Number (default: null)",
+        "moduleLessonIndex": "Number (default: 0)",
+        "modulePageIndex": "Number (default: 0)",
+        "learningPathTopic": "String (default: null)",
+        "groups": "Mixed (default: [])",
+        "discussions": "Mixed (default: [])",
+        "newsItems": "Mixed (default: [])",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      }
+    }
+  ],
+  "run_commands": [
+    {
+      "step": "Install dependencies",
+      "command": "npm install"
+    },
+    {
+      "step": "Start development server",
+      "command": "npm run dev"
+    },
+    {
+      "step": "Build for production",
+      "command": "npm run build"
+    },
+    {
+      "step": "Start production server",
+      "command": "npm start"
+    },
+    {
+      "step": "Seed users (admin + student)",
+      "command": "npm run seed:users"
+    }
+  ],
+  "env_examples": {
+    "MONGO_URI": "mongodb://localhost:27017/your-database-name",
+    "PORT": "5001",
+    "ADMIN_EMAIL": "admin@example.com",
+    "NODE_ENV": "development"
+  },
+  "created_files": {
+    "models/User.ts": "Mongoose model for User with firebaseUid, username (normalized), email, profile, role, and loginTimes array",
+    "models/Score.ts": "Mongoose model for Score with studentUid, examId, score, maxScore, groupId, and meta fields",
+    "models/Activity.ts": "Mongoose model for ActivityFile with activityId, filename, url, and uploadedByUid",
+    "models/Message.ts": "Mongoose model for Message with activityId, text, and senderUid",
+    "models/index.ts": "Barrel export for all models",
+    "routes/sync.ts": "Express router with sync endpoints: /user, /login-time, /scores, /activity/file, /activity/message. All use Firebase token auth via verifyAuth middleware.",
+    "scripts/seedUsers.ts": "Seed script that upserts admin and student users in MongoDB, and optionally creates them in Firebase Auth if service account is available",
+    "API_SYNC_ENDPOINTS.md": "API documentation for all sync endpoints with request/response examples"
+  },
+  "diffs": "See sync-feature.patch file for complete unified diff",
+  "seed_instructions": "Run 'npm run seed:users' to seed two users:\n1. admin@example.com (role: admin, firebaseUid: seed-admin-uid)\n2. student@example.com (role: student, firebaseUid: seed-user-uid)\n\nThe script will:\n- Upsert users in MongoDB User collection\n- Optionally create users in Firebase Auth (if service account exists)\n- Default Firebase password: Password123! (should be changed)\n\nPrerequisites:\n- MONGO_URI must be set in .env\n- Firebase service account JSON must exist (optional for Firebase Auth creation)",
+  "api_md_snippets": "See API_SYNC_ENDPOINTS.md for complete API documentation.\n\nKey endpoints:\n- POST /api/sync/user - Upsert user with firebaseUid\n- POST /api/sync/login-time - Record login timestamp\n- POST /api/scores - Save exam score\n- POST /api/activity/file - Save file metadata\n- POST /api/activity/message - Save message (socket.io pending)\n\nAll endpoints require Firebase ID token: Authorization: Bearer <token>",
+  "notes": [
+    "Firebase Admin SDK dependency added to package.json (firebase-admin@^12.0.0)",
+    "Service account JSON pattern added to .gitignore (*firebase*adminsdk*.json)",
+    "Sync routes registered in server.ts at /api/sync and /api (for scores/activity)",
+    "Socket.io integration is pending for /api/activity/message endpoint",
+    "Group membership validation is pending for /api/activity/message endpoint",
+    "All sync endpoints use admin.auth().verifyIdToken() for authentication",
+    "Username is automatically normalized (trim + lowercase) in User model",
+    "Seed script safely checks if Firebase users exist before creating them"
+  ],
+  "commit_message": "feat(sync): add backend sync endpoints and models\n\n- Add User, Score, ActivityFile, Message models\n- Add sync routes: /api/sync/user, /api/sync/login-time\n- Add /api/scores, /api/activity/file, /api/activity/message\n- Add seed script for admin and student users\n- Add firebase-admin dependency\n- Update .gitignore to exclude service account JSON\n- All endpoints use Firebase ID token authentication\n- Socket.io integration pending for message endpoint"
+}

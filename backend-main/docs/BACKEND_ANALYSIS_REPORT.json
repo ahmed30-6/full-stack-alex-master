@@ -1,0 +1,784 @@
+{
+  "architecture": {
+    "technologies": {
+      "runtime": "Node.js 25.x",
+      "language": "TypeScript",
+      "framework": "Express.js 4.21.2",
+      "database": "MongoDB (via Mongoose 9.0.0)",
+      "authentication": "Firebase Admin SDK 12.0.0",
+      "cors": "CORS 2.8.5 (configured for localhost:3000 and localhost:5173)"
+    },
+    "structure": {
+      "entry_point": "server.ts",
+      "models": "models/ directory (User, Score, ActivityFile, Message) + inline models in server.ts",
+      "routes": "routes/ directory (sync.ts) + inline routes in server.ts",
+      "scripts": "scripts/ directory (seedUsers.ts)",
+      "build_output": "dist/ (TypeScript compilation)"
+    },
+    "authentication_mechanism": "Firebase Admin SDK token verification using admin.auth().verifyIdToken()",
+    "database_usage": "MongoDB via Mongoose ODM with schema-based models and automatic timestamps"
+  },
+  "firebase_usage": [
+    {
+      "file": "server.ts",
+      "line": 5,
+      "import": "import admin from 'firebase-admin'",
+      "purpose": "Import Firebase Admin SDK"
+    },
+    {
+      "file": "server.ts",
+      "line": 7,
+      "import": "import { getFirestore, Timestamp } from 'firebase-admin/firestore'",
+      "purpose": "Import Firestore (initialized but not actively used)"
+    },
+    {
+      "file": "server.ts",
+      "lines": "68-84",
+      "code": "Firebase Admin initialization with service account",
+      "purpose": "Initialize Firebase Admin SDK with service account JSON file",
+      "details": "Loads adaptive-collaborative-learn-firebase-adminsdk-fbsvc-baa1399a32.json and initializes admin.initializeApp()"
+    },
+    {
+      "file": "server.ts",
+      "lines": "189-194",
+      "usage": "admin.auth().verifyIdToken(token)",
+      "endpoint": "POST /api/loginEvent",
+      "purpose": "Verify Firebase ID token for login event recording"
+    },
+    {
+      "file": "server.ts",
+      "lines": "232-237",
+      "usage": "admin.auth().verifyIdToken(token)",
+      "endpoint": "GET /api/loginEvents",
+      "purpose": "Verify Firebase ID token for admin-only login events retrieval"
+    },
+    {
+      "file": "server.ts",
+      "lines": "276-281",
+      "usage": "admin.auth().verifyIdToken(token)",
+      "endpoint": "POST /api/users",
+      "purpose": "Verify Firebase ID token for user creation/update"
+    },
+    {
+      "file": "server.ts",
+      "lines": "364-369",
+      "usage": "admin.auth().verifyIdToken(token)",
+      "endpoint": "GET /api/users",
+      "purpose": "Verify Firebase ID token for admin-only user list retrieval"
+    },
+    {
+      "file": "server.ts",
+      "lines": "446-451",
+      "usage": "admin.auth().verifyIdToken(token)",
+      "endpoint": "POST /api/appdata",
+      "purpose": "Verify Firebase ID token for saving app data"
+    },
+    {
+      "file": "server.ts",
+      "lines": "599-604",
+      "usage": "admin.auth().verifyIdToken(token)",
+      "endpoint": "GET /api/appdata",
+      "purpose": "Verify Firebase ID token for retrieving app data"
+    },
+    {
+      "file": "server.ts",
+      "lines": "635-640",
+      "usage": "admin.auth().verifyIdToken(token)",
+      "endpoint": "POST /api/profile",
+      "purpose": "Verify Firebase ID token for profile retrieval"
+    },
+    {
+      "file": "routes/sync.ts",
+      "lines": "8-24",
+      "usage": "admin.auth().verifyIdToken(token)",
+      "purpose": "Reusable middleware function verifyAuth() for all sync endpoints",
+      "details": "Extracts Bearer token, verifies with Firebase, attaches decoded user to request"
+    },
+    {
+      "file": "scripts/seedUsers.ts",
+      "lines": "23-38",
+      "usage": "admin.initializeApp() and admin.auth().createUser()",
+      "purpose": "Initialize Firebase Admin and optionally create seed users in Firebase Auth"
+    }
+  ],
+  "firestore_usage": {
+    "status": "INITIALIZED BUT NOT USED",
+    "details": "Firestore is imported and initialized (db = getFirestore()) but no actual Firestore operations are performed. All data operations use MongoDB."
+  },
+  "api_endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "auth_required": false,
+      "handler": "server.ts:59",
+      "purpose": "Health check endpoint - returns server status and MongoDB connection state",
+      "dependencies": ["mongoose"]
+    },
+    {
+      "method": "POST",
+      "path": "/api/addData",
+      "auth_required": false,
+      "handler": "server.ts:91",
+      "purpose": "Example endpoint without authentication - echoes back name and email",
+      "dependencies": [],
+      "note": "This appears to be a test/demo endpoint"
+    },
+    {
+      "method": "POST",
+      "path": "/api/loginEvent",
+      "auth_required": true,
+      "handler": "server.ts:180",
+      "purpose": "Record login event with user info, IP, and user agent",
+      "dependencies": ["Firebase Admin (verifyIdToken)", "LoginEvent model"],
+      "input": "{ name?, email?, userAgent? }",
+      "output": "{ message, data: LoginEventDoc }"
+    },
+    {
+      "method": "GET",
+      "path": "/api/loginEvents",
+      "auth_required": true,
+      "admin_only": true,
+      "handler": "server.ts:219",
+      "purpose": "Fetch recent 100 login events (admin only)",
+      "dependencies": [
+        "Firebase Admin (verifyIdToken)",
+        "LoginEvent model",
+        "ADMIN_EMAIL env var"
+      ],
+      "output": "{ events: LoginEventDoc[] }"
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "auth_required": true,
+      "handler": "server.ts:263",
+      "purpose": "Create or update user in both User and Student collections",
+      "dependencies": [
+        "Firebase Admin (verifyIdToken)",
+        "UserModel",
+        "StudentModel"
+      ],
+      "input": "{ name, email?, avatar?, updateName? }",
+      "output": "{ user: UserDoc }",
+      "notes": "Prevents users from updating other users unless admin. Handles name preservation logic."
+    },
+    {
+      "method": "GET",
+      "path": "/api/users",
+      "auth_required": true,
+      "admin_only": true,
+      "handler": "server.ts:351",
+      "purpose": "Get all students (admin only)",
+      "dependencies": [
+        "Firebase Admin (verifyIdToken)",
+        "StudentModel",
+        "ADMIN_EMAIL env var"
+      ],
+      "output": "{ users: StudentDoc[] }"
+    },
+    {
+      "method": "POST",
+      "path": "/api/appdata",
+      "auth_required": true,
+      "handler": "server.ts:433",
+      "purpose": "Save complete app state for user (scores, lessons, groups, discussions, etc.)",
+      "dependencies": [
+        "Firebase Admin (verifyIdToken)",
+        "AppDataModel",
+        "ActivityModel",
+        "GroupModel"
+      ],
+      "input": "{ moduleScores, completedLessons, finalQuizPassed, unlockedModules, currentActivityId, currentModuleId, moduleLessonIndex, modulePageIndex, learningPathTopic, groups, discussions, newsItems }",
+      "output": "{ appData: AppDataDoc }",
+      "notes": "Also creates Activity records and Group records as side effects"
+    },
+    {
+      "method": "GET",
+      "path": "/api/appdata",
+      "auth_required": true,
+      "handler": "server.ts:586",
+      "purpose": "Retrieve app state for authenticated user",
+      "dependencies": ["Firebase Admin (verifyIdToken)", "AppDataModel"],
+      "output": "{ appData: AppDataDoc | null }"
+    },
+    {
+      "method": "POST",
+      "path": "/api/profile",
+      "auth_required": true,
+      "handler": "server.ts:622",
+      "purpose": "Get user profile from MongoDB Student collection",
+      "dependencies": ["Firebase Admin (verifyIdToken)", "StudentModel"],
+      "input": "{ email }",
+      "output": "{ student: StudentDoc | null }",
+      "notes": "Prevents viewing other profiles unless admin"
+    },
+    {
+      "method": "POST",
+      "path": "/api/sync/user",
+      "auth_required": true,
+      "handler": "routes/sync.ts:27",
+      "purpose": "Upsert user with firebaseUid (NEW ENDPOINT)",
+      "dependencies": [
+        "Firebase Admin (verifyIdToken)",
+        "User model from models/"
+      ],
+      "input": "{ firebaseUid, username, email, profile?, role? }",
+      "output": "{ success: true, user: IUser }",
+      "notes": "Username is automatically normalized (trim + lowercase)"
+    },
+    {
+      "method": "POST",
+      "path": "/api/sync/login-time",
+      "auth_required": true,
+      "handler": "routes/sync.ts:56",
+      "purpose": "Record login timestamp in user's loginTimes array (NEW ENDPOINT)",
+      "dependencies": [
+        "Firebase Admin (verifyIdToken)",
+        "User model from models/"
+      ],
+      "input": "{ firebaseUid }",
+      "output": "{ success: true, user: IUser }"
+    },
+    {
+      "method": "POST",
+      "path": "/api/scores",
+      "auth_required": true,
+      "handler": "routes/sync.ts:79",
+      "purpose": "Save exam/quiz score (NEW ENDPOINT)",
+      "dependencies": [
+        "Firebase Admin (verifyIdToken)",
+        "Score model from models/"
+      ],
+      "input": "{ studentUid, examId, score, maxScore, groupId?, meta? }",
+      "output": "{ success: true, score: IScore }"
+    },
+    {
+      "method": "POST",
+      "path": "/api/activity/file",
+      "auth_required": true,
+      "handler": "routes/sync.ts:102",
+      "purpose": "Save activity file metadata (NEW ENDPOINT)",
+      "dependencies": [
+        "Firebase Admin (verifyIdToken)",
+        "ActivityFile model from models/"
+      ],
+      "input": "{ activityId, filename, url, uploadedByUid }",
+      "output": "{ success: true, file: IActivityFile }",
+      "notes": "Only saves metadata, not actual file upload"
+    },
+    {
+      "method": "POST",
+      "path": "/api/activity/message",
+      "auth_required": true,
+      "handler": "routes/sync.ts:125",
+      "purpose": "Save message to activity (NEW ENDPOINT)",
+      "dependencies": [
+        "Firebase Admin (verifyIdToken)",
+        "Message model from models/"
+      ],
+      "input": "{ activityId, text }",
+      "output": "{ success: true, message: IMessage, note: 'Socket.io integration pending' }",
+      "notes": "Group membership validation is TODO. Socket.io real-time broadcasting is TODO."
+    }
+  ],
+  "models": [
+    {
+      "name": "User (models/User.ts)",
+      "collection": "users",
+      "purpose": "New structured user model with firebaseUid for sync endpoints",
+      "schema": {
+        "firebaseUid": "String (required, unique, indexed)",
+        "username": "String (required, auto-normalized: trim+lowercase)",
+        "email": "String (required, unique, indexed)",
+        "profile": "Mixed (optional)",
+        "role": "String (enum: admin|student|teacher, default: student)",
+        "loginTimes": "Array of Dates (default: [])",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      },
+      "indexes": ["firebaseUid", "email"]
+    },
+    {
+      "name": "Score (models/Score.ts)",
+      "collection": "scores",
+      "purpose": "Store exam/quiz scores with student and exam identifiers",
+      "schema": {
+        "studentUid": "String (required, indexed)",
+        "examId": "String (required, indexed)",
+        "score": "Number (required)",
+        "maxScore": "Number (required)",
+        "groupId": "String (optional, indexed)",
+        "meta": "Mixed (optional)",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      },
+      "indexes": ["studentUid", "examId", "{ studentUid: 1, examId: 1 }"]
+    },
+    {
+      "name": "ActivityFile (models/Activity.ts)",
+      "collection": "activityfiles",
+      "purpose": "Store metadata for files uploaded to activities",
+      "schema": {
+        "activityId": "String (required, indexed)",
+        "filename": "String (required)",
+        "url": "String (required)",
+        "uploadedByUid": "String (required, indexed)",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      },
+      "indexes": ["activityId", "uploadedByUid"]
+    },
+    {
+      "name": "Message (models/Message.ts)",
+      "collection": "messages",
+      "purpose": "Store chat messages for activities",
+      "schema": {
+        "activityId": "String (required, indexed)",
+        "text": "String (required)",
+        "senderUid": "String (required, indexed)",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      },
+      "indexes": ["activityId", "senderUid"]
+    },
+    {
+      "name": "LoginEvent (server.ts inline)",
+      "collection": "loginevents",
+      "purpose": "Track user login events with IP and user agent",
+      "schema": {
+        "name": "String (required)",
+        "email": "String (required)",
+        "userAgent": "String (optional)",
+        "ip": "String (optional)",
+        "timestamp": "Date (default: now)"
+      },
+      "indexes": []
+    },
+    {
+      "name": "UserModel (server.ts inline)",
+      "collection": "users",
+      "purpose": "Legacy user model (overlaps with models/User.ts)",
+      "schema": {
+        "name": "String (required)",
+        "email": "String (required, unique)",
+        "avatar": "String (optional)",
+        "role": "String (default: student)",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      },
+      "indexes": ["email"],
+      "note": "DUPLICATE: This overlaps with models/User.ts - potential conflict"
+    },
+    {
+      "name": "StudentModel (server.ts inline)",
+      "collection": "students",
+      "purpose": "Store student-specific data with activity tracking",
+      "schema": {
+        "email": "String (required, unique)",
+        "name": "String (required)",
+        "avatar": "String (default: null)",
+        "registeredAt": "Date (default: now)",
+        "lastActivityAt": "Date (default: now)",
+        "status": "String (default: active)",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      },
+      "indexes": ["email"]
+    },
+    {
+      "name": "AppDataModel (server.ts inline)",
+      "collection": "appdatas",
+      "purpose": "Store complete app state per user (scores, progress, groups, etc.)",
+      "schema": {
+        "email": "String (required, unique)",
+        "moduleScores": "Mixed (default: {})",
+        "completedLessons": "Mixed (default: {})",
+        "finalQuizPassed": "Boolean (default: false)",
+        "unlockedModules": "Array of Numbers (default: [1])",
+        "currentActivityId": "Number (default: null)",
+        "currentModuleId": "Number (default: null)",
+        "moduleLessonIndex": "Number (default: 0)",
+        "modulePageIndex": "Number (default: 0)",
+        "learningPathTopic": "String (default: null)",
+        "groups": "Mixed (default: [])",
+        "discussions": "Mixed (default: [])",
+        "newsItems": "Mixed (default: [])",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      },
+      "indexes": ["email"]
+    },
+    {
+      "name": "ActivityModel (server.ts inline, dynamically created)",
+      "collection": "activities",
+      "purpose": "Track user activities (quiz completion, activity completion)",
+      "schema": {
+        "userEmail": "String",
+        "userName": "String",
+        "action": "String",
+        "description": "String",
+        "timestamp": "Date",
+        "moduleId": "Number",
+        "score": "Mixed",
+        "createdAt": "Date (auto)",
+        "updatedAt": "Date (auto)"
+      },
+      "indexes": [],
+      "note": "Created dynamically in /api/appdata endpoint"
+    },
+    {
+      "name": "GroupModel (server.ts inline, dynamically created)",
+      "collection": "groups",
+      "purpose": "Store group information with members",
+      "schema": {
+        "id": "String",
+        "name": "String",
+        "level": "Number",
+        "members": "Mixed",
+        "createdAt": "Date",
+        "updatedAt": "Date"
+      },
+      "indexes": [],
+      "note": "Created dynamically in /api/appdata endpoint"
+    }
+  ],
+  "flows": {
+    "authentication_flow": {
+      "description": "Firebase-based token authentication",
+      "steps": [
+        "1. Frontend obtains Firebase ID token after user signs in with Firebase Auth",
+        "2. Frontend sends token in Authorization header: 'Bearer <token>'",
+        "3. Backend extracts token from header",
+        "4. Backend calls admin.auth().verifyIdToken(token)",
+        "5. If valid, decoded token contains user info (uid, email, name)",
+        "6. Backend proceeds with request using decoded user info",
+        "7. If invalid, returns 401 Unauthorized"
+      ],
+      "admin_check": "Some endpoints check if decoded.email matches ADMIN_EMAIL env variable for admin-only access"
+    },
+    "user_registration_login_flow": {
+      "description": "User creation and login tracking",
+      "steps": [
+        "1. User signs in via Firebase Auth (frontend)",
+        "2. Frontend calls POST /api/users with token to create/update user in MongoDB",
+        "3. Backend verifies token and upserts to both UserModel and StudentModel collections",
+        "4. Frontend calls POST /api/loginEvent to record login event",
+        "5. Backend saves LoginEvent with IP, user agent, timestamp",
+        "6. Optionally, frontend calls POST /api/sync/login-time to record in User.loginTimes array"
+      ],
+      "note": "There are TWO user creation endpoints: /api/users (legacy) and /api/sync/user (new)"
+    },
+    "quiz_data_flow": {
+      "description": "How quiz/exam scores are saved and retrieved",
+      "steps": [
+        "1. Student completes quiz/exam in frontend",
+        "2. Frontend calls POST /api/scores with { studentUid, examId, score, maxScore, groupId?, meta? }",
+        "3. Backend saves to Score collection",
+        "4. Frontend also calls POST /api/appdata with moduleScores object",
+        "5. Backend saves to AppDataModel with all app state including scores",
+        "6. If finalQuizPassed=true, backend creates Activity record",
+        "7. Admin can retrieve scores via GET /api/appdata (if they know user email) or by querying Score collection directly (no endpoint exists yet)"
+      ],
+      "gap": "No endpoint exists to query all scores or scores by examId for admin dashboard"
+    },
+    "file_upload_flow": {
+      "description": "File upload handling",
+      "current_state": "METADATA ONLY - No actual file upload implementation",
+      "steps": [
+        "1. Frontend uploads file to external storage (e.g., Firebase Storage, S3) - NOT IMPLEMENTED IN BACKEND",
+        "2. Frontend obtains file URL from storage service",
+        "3. Frontend calls POST /api/activity/file with { activityId, filename, url, uploadedByUid }",
+        "4. Backend saves metadata to ActivityFile collection",
+        "5. No file serving or proxying is implemented"
+      ],
+      "gap": "Backend does not handle actual file uploads, only metadata storage"
+    },
+    "chat_collaboration_flow": {
+      "description": "Group chat and collaboration",
+      "current_state": "PARTIAL - Messages saved but no real-time broadcasting",
+      "steps": [
+        "1. Frontend calls POST /api/activity/message with { activityId, text }",
+        "2. Backend verifies token and saves to Message collection",
+        "3. Backend returns success but does NOT broadcast to other users",
+        "4. Frontend must poll or implement its own real-time mechanism"
+      ],
+      "gaps": [
+        "No Socket.io integration for real-time message broadcasting",
+        "No group membership validation (TODO in code)",
+        "No endpoint to retrieve messages for an activity",
+        "No endpoint to retrieve files for an activity"
+      ]
+    },
+    "admin_dashboard_flow": {
+      "description": "How admin dashboard interacts with backend",
+      "steps": [
+        "1. Admin logs in with Firebase Auth",
+        "2. Admin calls GET /api/users to get all students (requires ADMIN_EMAIL match)",
+        "3. Admin calls GET /api/loginEvents to see recent login events",
+        "4. Admin can view individual user data via GET /api/appdata (if they know email)",
+        "5. Groups are stored in AppDataModel.groups array (embedded, not separate collection query)"
+      ],
+      "gaps": [
+        "No endpoint to get all groups",
+        "No endpoint to get all scores",
+        "No endpoint to get all activities",
+        "No endpoint to get messages or files for admin review",
+        "No real-time updates for admin dashboard"
+      ]
+    }
+  },
+  "weak_points": [
+    {
+      "category": "Architecture",
+      "issue": "Model duplication and confusion",
+      "details": "Two User models exist: UserModel (server.ts inline) and User (models/User.ts). Both use 'users' collection. This creates potential conflicts and confusion.",
+      "severity": "HIGH",
+      "recommendation": "Consolidate to single User model, migrate data if needed"
+    },
+    {
+      "category": "Architecture",
+      "issue": "Inline model definitions",
+      "details": "ActivityModel and GroupModel are created dynamically inside endpoint handlers, not in dedicated model files",
+      "severity": "MEDIUM",
+      "recommendation": "Move all models to models/ directory for consistency"
+    },
+    {
+      "category": "Security",
+      "issue": "No input validation",
+      "details": "Endpoints accept user input without validation (e.g., email format, string lengths, SQL injection via NoSQL)",
+      "severity": "HIGH",
+      "recommendation": "Add validation library (e.g., Joi, express-validator)"
+    },
+    {
+      "category": "Security",
+      "issue": "No rate limiting",
+      "details": "No rate limiting on any endpoints - vulnerable to DoS attacks",
+      "severity": "MEDIUM",
+      "recommendation": "Add express-rate-limit middleware"
+    },
+    {
+      "category": "Security",
+      "issue": "Admin check relies on single env variable",
+      "details": "Admin access controlled by ADMIN_EMAIL env var. No role-based access control (RBAC) system.",
+      "severity": "MEDIUM",
+      "recommendation": "Implement proper RBAC using User.role field"
+    },
+    {
+      "category": "Data Integrity",
+      "issue": "No transactions",
+      "details": "Operations that update multiple collections (e.g., /api/users updates both UserModel and StudentModel) are not atomic",
+      "severity": "MEDIUM",
+      "recommendation": "Use MongoDB transactions for multi-collection operations"
+    },
+    {
+      "category": "Data Integrity",
+      "issue": "Embedded arrays in AppDataModel",
+      "details": "groups, discussions, newsItems stored as embedded arrays - difficult to query, update, and scale",
+      "severity": "MEDIUM",
+      "recommendation": "Normalize data structure with separate collections and references"
+    },
+    {
+      "category": "Performance",
+      "issue": "No pagination",
+      "details": "GET /api/users returns up to 1000 users, GET /api/loginEvents returns 100 events - no pagination support",
+      "severity": "LOW",
+      "recommendation": "Add pagination with skip/limit or cursor-based pagination"
+    },
+    {
+      "category": "Performance",
+      "issue": "No caching",
+      "details": "No caching layer for frequently accessed data (e.g., user profiles, app data)",
+      "severity": "LOW",
+      "recommendation": "Add Redis or in-memory caching for hot data"
+    },
+    {
+      "category": "Real-time",
+      "issue": "No Socket.io implementation",
+      "details": "Messages saved but not broadcast in real-time. Admin dashboard cannot see live updates.",
+      "severity": "HIGH",
+      "recommendation": "Integrate Socket.io for real-time messaging and admin dashboard updates"
+    },
+    {
+      "category": "API Design",
+      "issue": "Missing CRUD endpoints",
+      "details": "Many collections have only create operations, no read/update/delete endpoints (e.g., Score, Message, ActivityFile)",
+      "severity": "MEDIUM",
+      "recommendation": "Add complete CRUD operations for all resources"
+    },
+    {
+      "category": "API Design",
+      "issue": "Inconsistent response formats",
+      "details": "Some endpoints return { success, data }, others return { message, data }, others just { data }",
+      "severity": "LOW",
+      "recommendation": "Standardize API response format"
+    },
+    {
+      "category": "Error Handling",
+      "issue": "Inconsistent error handling",
+      "details": "Some errors logged, some not. No centralized error handling middleware.",
+      "severity": "MEDIUM",
+      "recommendation": "Add centralized error handling middleware"
+    },
+    {
+      "category": "Testing",
+      "issue": "No tests",
+      "details": "package.json shows 'test' script does nothing. No unit or integration tests.",
+      "severity": "HIGH",
+      "recommendation": "Add Jest/Mocha tests for all endpoints and models"
+    },
+    {
+      "category": "Documentation",
+      "issue": "Limited API documentation",
+      "details": "Only API_SYNC_ENDPOINTS.md exists for new endpoints. No comprehensive API docs.",
+      "severity": "LOW",
+      "recommendation": "Add Swagger/OpenAPI documentation"
+    },
+    {
+      "category": "Deployment",
+      "issue": "Service account JSON in repository",
+      "details": "adaptive-collaborative-learn-firebase-adminsdk-fbsvc-baa1399a32.json is tracked in git (though now in .gitignore)",
+      "severity": "CRITICAL",
+      "recommendation": "Remove from git history, rotate credentials, use environment variables or secret management"
+    }
+  ],
+  "requirements_gap": {
+    "requirement_1": {
+      "description": "Save new user into Mongo and show them in admin dashboard",
+      "status": "SUPPORTED",
+      "details": "POST /api/users and POST /api/sync/user both save users to MongoDB. GET /api/users (admin-only) retrieves all students for dashboard.",
+      "gaps": [
+        "Two different user creation endpoints may cause confusion",
+        "Admin dashboard must know to use GET /api/users endpoint"
+      ]
+    },
+    "requirement_2": {
+      "description": "Normalize username on login/register",
+      "status": "PARTIALLY SUPPORTED",
+      "details": "models/User.ts has username normalization (trim + lowercase) via Mongoose setter. However, POST /api/users uses 'name' field (not 'username') and does NOT normalize it.",
+      "gaps": [
+        "POST /api/users does not normalize username",
+        "Only POST /api/sync/user normalizes username",
+        "Inconsistency between two user creation endpoints"
+      ],
+      "recommendation": "Consolidate to single endpoint with normalization"
+    },
+    "requirement_3": {
+      "description": "Save exam scores & learning path to Mongo",
+      "status": "SUPPORTED",
+      "details": "POST /api/scores saves individual scores. POST /api/appdata saves moduleScores, completedLessons, learningPathTopic, and other learning path data.",
+      "gaps": [
+        "No endpoint to retrieve scores by examId or studentUid",
+        "No endpoint to retrieve learning path progress for admin dashboard",
+        "Learning path validation logic not implemented (see requirement 7)"
+      ]
+    },
+    "requirement_4": {
+      "description": "Group-based chat + file upload appearing in admin panel",
+      "status": "PARTIALLY SUPPORTED",
+      "details": "POST /api/activity/message saves messages. POST /api/activity/file saves file metadata. Groups stored in AppDataModel.groups array.",
+      "gaps": [
+        "No endpoint to retrieve messages for admin panel",
+        "No endpoint to retrieve files for admin panel",
+        "No endpoint to retrieve all groups for admin panel",
+        "No real-time updates (Socket.io not implemented)",
+        "No group membership validation when posting messages",
+        "File upload only saves metadata, not actual file handling"
+      ],
+      "recommendation": "Add GET /api/groups, GET /api/messages/:activityId, GET /api/files/:activityId, implement Socket.io"
+    },
+    "requirement_5": {
+      "description": "Admin selecting only ONE member when creating group",
+      "status": "NOT SUPPORTED",
+      "details": "No dedicated group creation endpoint exists. Groups are created as part of POST /api/appdata with arbitrary members array. No validation on member count.",
+      "gaps": [
+        "No POST /api/groups endpoint",
+        "No validation on group member count",
+        "No business logic to enforce single-member constraint"
+      ],
+      "recommendation": "Create POST /api/groups endpoint with validation: members.length === 1"
+    },
+    "requirement_6": {
+      "description": "Save login times for admin dashboard",
+      "status": "SUPPORTED",
+      "details": "POST /api/loginEvent saves login events with timestamp. POST /api/sync/login-time saves timestamps in User.loginTimes array. GET /api/loginEvents (admin-only) retrieves recent login events.",
+      "gaps": [
+        "Two different mechanisms for tracking login times (LoginEvent collection vs User.loginTimes array)",
+        "Admin dashboard must know which endpoint to use"
+      ],
+      "recommendation": "Consolidate to single mechanism"
+    },
+    "requirement_7": {
+      "description": "Validate learning path logic",
+      "status": "NOT SUPPORTED",
+      "details": "AppDataModel stores learningPathTopic, unlockedModules, currentModuleId, etc., but no validation logic exists in backend.",
+      "gaps": [
+        "No validation that user has completed prerequisites before unlocking modules",
+        "No validation of module progression order",
+        "No validation of quiz scores before marking lessons complete",
+        "All validation must be done in frontend (insecure)"
+      ],
+      "recommendation": "Add middleware/service layer to validate learning path progression rules before saving to AppDataModel"
+    },
+    "requirement_8": {
+      "description": "Admin changes appear for students in real-time",
+      "status": "NOT SUPPORTED",
+      "details": "No real-time mechanism exists. No Socket.io integration. No webhooks or push notifications.",
+      "gaps": [
+        "No Socket.io server",
+        "No WebSocket connections",
+        "No server-sent events (SSE)",
+        "Students must poll or refresh to see admin changes"
+      ],
+      "recommendation": "Implement Socket.io with rooms for users/groups. Emit events when admin makes changes (e.g., group updates, announcements, module unlocks)"
+    }
+  },
+  "run_commands": [
+    {
+      "command": "npm install",
+      "purpose": "Install all dependencies including firebase-admin"
+    },
+    {
+      "command": "npm run dev",
+      "purpose": "Start development server with nodemon (auto-restart on changes)"
+    },
+    {
+      "command": "npm run build",
+      "purpose": "Compile TypeScript to JavaScript in dist/ folder"
+    },
+    {
+      "command": "npm start",
+      "purpose": "Start production server from compiled dist/server.js"
+    },
+    {
+      "command": "npm run seed:users",
+      "purpose": "Seed admin and student users to MongoDB (and optionally Firebase Auth)"
+    },
+    {
+      "command": "npm run test-connect",
+      "purpose": "Test MongoDB connection (requires testConnect.ts file)"
+    }
+  ],
+  "env_variables": {
+    "MONGO_URI": {
+      "required": true,
+      "example": "mongodb://localhost:27017/adaptive-learning",
+      "purpose": "MongoDB connection string"
+    },
+    "PORT": {
+      "required": false,
+      "default": "5001",
+      "example": "5001",
+      "purpose": "Server port"
+    },
+    "ADMIN_EMAIL": {
+      "required": true,
+      "example": "admin@example.com",
+      "purpose": "Email address for admin-only endpoint access"
+    },
+    "NODE_ENV": {
+      "required": false,
+      "example": "development",
+      "purpose": "Environment mode (development/production)"
+    }
+  }
+}

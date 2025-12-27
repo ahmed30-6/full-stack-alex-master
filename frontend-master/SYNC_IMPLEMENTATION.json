@@ -1,0 +1,15 @@
+{
+  "firebase_usages": [
+    {
+      "file": "src/firebase.ts",
+      "snippet": "import { initializeApp, FirebaseApp } from \"firebase/app\";\nimport { getAuth, Auth } from \"firebase/auth\";\nimport { getAnalytics } from \"firebase/analytics\";\n\nconst firebaseConfig = {\n  apiKey: \"AIzaSyDhbHlWT-gfVfA24TCR8CAPLy66Km1BmJQ\",\n  authDomain: \"adaptive-collaborative-learn.firebaseapp.com\",\n  projectId: \"adaptive-collaborative-learn\",\n  storageBucket: \"adaptive-collaborative-learn.firebasestorage.app\",\n  messagingSenderId:\"770860071379\",\n  appId: \"1:770860071379:web:75c337ab37dfdb10631726\",\n  measurementId: \"G-VQLJ8HRNHB\",\n};\n\nconst app: FirebaseApp = initializeApp(firebaseConfig);\nconst analytics = getAnalytics(app);\nexport const auth: Auth = getAuth(app);\nexport default app;",
+      "purpose": "Firebase initialization and authentication setup"
+    },
+    {
+      "file": "src/authservice.ts",
+      "snippet": "import { auth } from \"../src/firebase\";\nimport { signInWithEmailAndPassword } from \"firebase/auth\";\n\nexport const loginUser = async (email: string, password: string) => {\n  try {\n    const userCredential = await signInWithEmailAndPassword(auth, email, password);\n    const token = await userCredential.user.getIdToken();\n    console.log(\"Token:\", token);\n    return token;\n  } catch (error) {\n    console.error(error);\n    throw error;\n  }\n};",
+      "purpose": "Firebase authentication - user login with email/password"
+    },
+    {
+      "file": "components/LoginPage.tsx",
+      "sn
